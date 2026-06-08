@@ -16,7 +16,7 @@ project(mmkv)
 # iOS builds as static library, all others as shared
 option(MMKV_UNITY_IOS "Build as iOS static library" OFF)
 
-IF(APPLE AND NOT MMKV_UNITY_IOS)
+IF(APPLE)
     add_compile_definitions(FORCE_POSIX)
 ENDIF()
 

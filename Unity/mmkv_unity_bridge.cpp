@@ -23,9 +23,9 @@
 #include <cstring>
 
 #ifdef _WIN32
-#  define MMKV_EXPORT extern "C" __declspec(dllexport)
+#  define UNITY_EXPORT extern "C" __declspec(dllexport)
 #else
-#  define MMKV_EXPORT extern "C" __attribute__((visibility("default")))
+#  define UNITY_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
 #ifdef MMKV_WIN32
@@ -47,13 +47,13 @@ static MMKVPath_t ToMMKVPath(const char *str) {
 }
 #endif
 
-MMKV_EXPORT void InitializeMMKV(const char *rootDir) {
+UNITY_EXPORT void InitializeMMKV(const char *rootDir) {
     if (rootDir) {
         MMKV::initializeMMKV(ToMMKVPath(rootDir));
     }
 }
 
-MMKV_EXPORT void *MMKVWithID(const char *mmapId, const char *path) {
+UNITY_EXPORT void *MMKVWithID(const char *mmapId, const char *path) {
     if (!mmapId) {
         return nullptr;
     }
@@ -62,7 +62,7 @@ MMKV_EXPORT void *MMKVWithID(const char *mmapId, const char *path) {
     return static_cast<void *>(MMKV::mmkvWithID(std::string(mmapId), MMKV_SINGLE_PROCESS, nullptr, pathPtr));
 }
 
-MMKV_EXPORT bool SetBool(void *ptr, const char *key, bool v) {
+UNITY_EXPORT bool SetBool(void *ptr, const char *key, bool v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -70,7 +70,7 @@ MMKV_EXPORT bool SetBool(void *ptr, const char *key, bool v) {
     return kv->set(v, key);
 }
 
-MMKV_EXPORT bool GetBool(void *ptr, const char *key, bool defaultValue) {
+UNITY_EXPORT bool GetBool(void *ptr, const char *key, bool defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue;
@@ -78,7 +78,7 @@ MMKV_EXPORT bool GetBool(void *ptr, const char *key, bool defaultValue) {
     return kv->getBool(key, defaultValue);
 }
 
-MMKV_EXPORT bool SetInt(void *ptr, const char *key, int32_t v) {
+UNITY_EXPORT bool SetInt(void *ptr, const char *key, int32_t v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -86,7 +86,7 @@ MMKV_EXPORT bool SetInt(void *ptr, const char *key, int32_t v) {
     return kv->set(v, key);
 }
 
-MMKV_EXPORT int32_t GetInt(void *ptr, const char *key, int32_t defaultValue) {
+UNITY_EXPORT int32_t GetInt(void *ptr, const char *key, int32_t defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue;
@@ -94,7 +94,7 @@ MMKV_EXPORT int32_t GetInt(void *ptr, const char *key, int32_t defaultValue) {
     return kv->getInt32(key, defaultValue);
 }
 
-MMKV_EXPORT bool SetLong(void *ptr, const char *key, int64_t v) {
+UNITY_EXPORT bool SetLong(void *ptr, const char *key, int64_t v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -102,7 +102,7 @@ MMKV_EXPORT bool SetLong(void *ptr, const char *key, int64_t v) {
     return kv->set(v, key);
 }
 
-MMKV_EXPORT int64_t GetLong(void *ptr, const char *key, int64_t defaultValue) {
+UNITY_EXPORT int64_t GetLong(void *ptr, const char *key, int64_t defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue;
@@ -110,7 +110,7 @@ MMKV_EXPORT int64_t GetLong(void *ptr, const char *key, int64_t defaultValue) {
     return kv->getInt64(key, defaultValue);
 }
 
-MMKV_EXPORT bool SetULong(void *ptr, const char *key, uint64_t v) {
+UNITY_EXPORT bool SetULong(void *ptr, const char *key, uint64_t v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -118,7 +118,7 @@ MMKV_EXPORT bool SetULong(void *ptr, const char *key, uint64_t v) {
     return kv->set(v, key);
 }
 
-MMKV_EXPORT uint64_t GetULong(void *ptr, const char *key, uint64_t defaultValue) {
+UNITY_EXPORT uint64_t GetULong(void *ptr, const char *key, uint64_t defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue;
@@ -126,7 +126,7 @@ MMKV_EXPORT uint64_t GetULong(void *ptr, const char *key, uint64_t defaultValue)
     return kv->getUInt64(key, defaultValue);
 }
 
-MMKV_EXPORT bool SetFloat(void *ptr, const char *key, float v) {
+UNITY_EXPORT bool SetFloat(void *ptr, const char *key, float v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -134,7 +134,7 @@ MMKV_EXPORT bool SetFloat(void *ptr, const char *key, float v) {
     return kv->set(v, key);
 }
 
-MMKV_EXPORT float GetFloat(void *ptr, const char *key, float defaultValue) {
+UNITY_EXPORT float GetFloat(void *ptr, const char *key, float defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue;
@@ -142,7 +142,7 @@ MMKV_EXPORT float GetFloat(void *ptr, const char *key, float defaultValue) {
     return kv->getFloat(key, defaultValue);
 }
 
-MMKV_EXPORT bool SetString(void *ptr, const char *key, const char *v) {
+UNITY_EXPORT bool SetString(void *ptr, const char *key, const char *v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -150,7 +150,7 @@ MMKV_EXPORT bool SetString(void *ptr, const char *key, const char *v) {
     return kv->set(v ? v : "", key);
 }
 
-MMKV_EXPORT const char *GetString(void *ptr, const char *key, const char *defaultValue) {
+UNITY_EXPORT const char *GetString(void *ptr, const char *key, const char *defaultValue) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return defaultValue ? strdup(defaultValue) : nullptr;
@@ -162,7 +162,7 @@ MMKV_EXPORT const char *GetString(void *ptr, const char *key, const char *defaul
     return defaultValue ? strdup(defaultValue) : nullptr;
 }
 
-MMKV_EXPORT bool HasKey(void *ptr, const char *key) {
+UNITY_EXPORT bool HasKey(void *ptr, const char *key) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return false;
@@ -170,7 +170,7 @@ MMKV_EXPORT bool HasKey(void *ptr, const char *key) {
     return kv->containsKey(key);
 }
 
-MMKV_EXPORT void DeleteKey(void *ptr, const char *key) {
+UNITY_EXPORT void DeleteKey(void *ptr, const char *key) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
         return;
@@ -178,7 +178,7 @@ MMKV_EXPORT void DeleteKey(void *ptr, const char *key) {
     kv->removeValueForKey(key);
 }
 
-MMKV_EXPORT void DeleteAll(void *ptr, bool keepSpace) {
+UNITY_EXPORT void DeleteAll(void *ptr, bool keepSpace) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv) {
         return;
@@ -186,7 +186,7 @@ MMKV_EXPORT void DeleteAll(void *ptr, bool keepSpace) {
     kv->clearAll(keepSpace);
 }
 
-MMKV_EXPORT void MMKVClose(void *ptr) {
+UNITY_EXPORT void MMKVClose(void *ptr) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv) {
         return;
@@ -194,14 +194,14 @@ MMKV_EXPORT void MMKVClose(void *ptr) {
     kv->close();
 }
 
-MMKV_EXPORT int FreeString(const char *str) {
+UNITY_EXPORT int FreeString(const char *str) {
     if (str) {
         free(const_cast<char *>(str));
     }
     return 0;
 }
 
-MMKV_EXPORT bool RemoveStorage(const char *mmapId, const char *path) {
+UNITY_EXPORT bool RemoveStorage(const char *mmapId, const char *path) {
     if (!mmapId) {
         return false;
     }
