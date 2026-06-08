@@ -48,6 +48,10 @@ public class MMKV {
         return Native_SetInt(mmkvPtr, key, v);
     }
 
+    public bool SetUInt(string key, uint v) {
+        return Native_SetUInt(mmkvPtr, key, v);
+    }
+
     public bool SetLong(string key, long v) {
         return Native_SetLong(mmkvPtr, key, v);
     }
@@ -70,6 +74,10 @@ public class MMKV {
 
     public int GetInt(string key, int defaultValue = 0) {
         return Native_GetInt(mmkvPtr, key, defaultValue);
+    }
+
+    public uint GetUInt(string key, uint defaultValue = 0) {
+        return Native_GetUInt(mmkvPtr, key, defaultValue);
     }
 
     public long GetLong(string key, long defaultValue = 0) {
@@ -142,6 +150,12 @@ public class MMKV {
 
     [DllImport(dll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetInt")]
     private static extern int Native_GetInt(IntPtr mmkvPtr, string key, int defaultValue);
+
+    [DllImport(dll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetUInt")]
+    private static extern bool Native_SetUInt(IntPtr mmkvPtr, string key, uint v);
+
+    [DllImport(dll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "GetUInt")]
+    private static extern uint Native_GetUInt(IntPtr mmkvPtr, string key, uint defaultValue);
 
     [DllImport(dll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SetLong")]
     private static extern bool Native_SetLong(IntPtr mmkvPtr, string key, long v);

@@ -94,6 +94,22 @@ UNITY_EXPORT int32_t GetInt(void *ptr, const char *key, int32_t defaultValue) {
     return kv->getInt32(key, defaultValue);
 }
 
+UNITY_EXPORT bool SetUInt(void *ptr, const char *key, uint32_t v) {
+    auto kv = static_cast<MMKV *>(ptr);
+    if (!kv || !key) {
+        return false;
+    }
+    return kv->set(v, key);
+}
+
+UNITY_EXPORT uint32_t GetUInt(void *ptr, const char *key, uint32_t defaultValue) {
+    auto kv = static_cast<MMKV *>(ptr);
+    if (!kv || !key) {
+        return defaultValue;
+    }
+    return kv->getUInt32(key, defaultValue);
+}
+
 UNITY_EXPORT bool SetLong(void *ptr, const char *key, int64_t v) {
     auto kv = static_cast<MMKV *>(ptr);
     if (!kv || !key) {
