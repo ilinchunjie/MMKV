@@ -26,15 +26,20 @@ jobs:
             -DMMKV_UNITY_IOS=ON
           cmake --build build-ios --config Release
 
-      - name: Collect artifact
+      - name: Merge static libraries and strip
         run: |
-          mkdir -p artifact/Plugins/iOS
-          cp build-ios/Release-iphoneos/libmmkv.a artifact/Plugins/iOS/libmmkv.a
+          MMKV_LIB=$(find build-ios -name "libmmkv.a" -path "*/Release*" | head -1)
+          CORE_LIB=$(find build-ios -name "libcore.a" -path "*/Release*" | head -1)
+          echo "Found mmkv: $MMKV_LIB"
+          echo "Found core: $CORE_LIB"
+          libtool -static -o libmmkv_merged.a $MMKV_LIB $CORE_LIB
+          strip -x libmmkv_merged.a
+          ls -lh libmmkv_merged.a
 
       - uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
-          path: artifact/Plugins/iOS/
+          path: libmmkv_merged.a
 
   # ============================================================
   # Android - arm64-v8a / armeabi-v7a / x86_64 Shared Libraries
@@ -59,23 +64,26 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
-          cmake -S Unity -B build-android-${{ matrix.abi }} \
+          cmake -S Unity -B build-android \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=${{ matrix.abi }} \
             -DANDROID_PLATFORM=android-21 \
             -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
             -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-android-${{ matrix.abi }} --config Release
+          cmake --build build-android --config Release
 
-      - name: Collect artifact
+      - name: Strip
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
-          mkdir -p artifact/Plugins/Android/libs/${{ matrix.abi }}
-          cp build-android-${{ matrix.abi }}/libmmkv.so artifact/Plugins/Android/libs/${{ matrix.abi }}/libmmkv.so
+          STRIP=$(find $ANDROID_NDK_HOME -name "llvm-strip" | head -1)
+          $STRIP --strip-unneeded build-android/libmmkv.so
+          ls -lh build-android/libmmkv.so
 
       - uses: actions/upload-artifact@v4
         with:
           name: android-${{ matrix.abi }}
-          path: artifact/Plugins/Android/
+          path: build-android/libmmkv.so
 
   # ============================================================
   # Linux - x86_64 Shared Library
@@ -93,15 +101,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-linux --config Release
 
-      - name: Collect artifact
+      - name: Strip
         run: |
-          mkdir -p artifact/Plugins/Linux/x86_64
-          cp build-linux/libmmkv.so artifact/Plugins/Linux/x86_64/libmmkv.so
+          strip --strip-unneeded build-linux/libmmkv.so
+          ls -lh build-linux/libmmkv.so
 
       - uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
-          path: artifact/Plugins/Linux/
+          path: build-linux/libmmkv.so
 
   # ============================================================
   # macOS - arm64 Shared Library
@@ -120,15 +128,15 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-macos --config Release
 
-      - name: Collect artifact
+      - name: Strip
         run: |
-          mkdir -p artifact/Plugins/macOS/arm64
-          cp build-macos/libmmkv.dylib artifact/Plugins/macOS/arm64/mmkv.dylib
+          strip -x build-macos/libmmkv.dylib
+          ls -lh build-macos/libmmkv.dylib
 
       - uses: actions/upload-artifact@v4
         with:
           name: macos-arm64
-          path: artifact/Plugins/macOS/
+          path: build-macos/libmmkv.dylib
 
   # ============================================================
   # Windows - x86_64 Shared Library
@@ -145,16 +153,10 @@ jobs:
           cmake -S Unity -B build-windows -A x64
           cmake --build build-windows --config Release
 
-      - name: Collect artifact
-        run: |
-          mkdir -p artifact/Plugins/Windows/x86_64
-          cp build-windows/Release/mmkv.dll artifact/Plugins/Windows/x86_64/mmkv.dll
-        shell: bash
-
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64
-          path: artifact/Plugins/Windows/
+          path: build-windows/Release/mmkv.dll
 
   # ============================================================
   # Release - Assemble Unity Plugin package and create Release
@@ -174,28 +176,26 @@ jobs:
 
       - name: Assemble Unity Plugin package
         run: |
-          mkdir -p package/MMKV/Plugins
+          # Create directory structure following Unity Plugins convention
+          mkdir -p package/MMKV/Plugins/iOS
+          mkdir -p package/MMKV/Plugins/Android/libs/arm64-v8a
+          mkdir -p package/MMKV/Plugins/Android/libs/armeabi-v7a
+          mkdir -p package/MMKV/Plugins/Android/libs/x86_64
+          mkdir -p package/MMKV/Plugins/Linux/x86_64
+          mkdir -p package/MMKV/Plugins/macOS/arm64
+          mkdir -p package/MMKV/Plugins/Windows/x86_64
 
           # Copy MMKV.cs
           cp Unity/MMKV.cs package/MMKV/MMKV.cs
 
-          # iOS
-          cp -r artifacts/ios-arm64/* package/MMKV/Plugins/
-
-          # Android (merge all ABIs)
-          mkdir -p package/MMKV/Plugins/Android/libs
-          cp -r artifacts/android-arm64-v8a/libs/arm64-v8a package/MMKV/Plugins/Android/libs/
-          cp -r artifacts/android-armeabi-v7a/libs/armeabi-v7a package/MMKV/Plugins/Android/libs/
-          cp -r artifacts/android-x86_64/libs/x86_64 package/MMKV/Plugins/Android/libs/
-
-          # Linux
-          cp -r artifacts/linux-x86_64/* package/MMKV/Plugins/
-
-          # macOS
-          cp -r artifacts/macos-arm64/* package/MMKV/Plugins/
-
-          # Windows
-          cp -r artifacts/windows-x86_64/* package/MMKV/Plugins/
+          # Copy platform binaries
+          cp artifacts/ios-arm64/libmmkv_merged.a          package/MMKV/Plugins/iOS/libmmkv.a
+          cp artifacts/android-arm64-v8a/libmmkv.so        package/MMKV/Plugins/Android/libs/arm64-v8a/libmmkv.so
+          cp artifacts/android-armeabi-v7a/libmmkv.so      package/MMKV/Plugins/Android/libs/armeabi-v7a/libmmkv.so
+          cp artifacts/android-x86_64/libmmkv.so           package/MMKV/Plugins/Android/libs/x86_64/libmmkv.so
+          cp artifacts/linux-x86_64/libmmkv.so             package/MMKV/Plugins/Linux/x86_64/libmmkv.so
+          cp artifacts/macos-arm64/libmmkv.dylib            package/MMKV/Plugins/macOS/arm64/mmkv.dylib
+          cp artifacts/windows-x86_64/mmkv.dll             package/MMKV/Plugins/Windows/x86_64/mmkv.dll
 
           # Create zip
           cd package
