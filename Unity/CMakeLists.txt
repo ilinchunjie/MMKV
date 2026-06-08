@@ -34,7 +34,8 @@ add_library(mmkv ${MMKV_LIB_TYPE}
         )
 
 target_include_directories(mmkv PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR})
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../Core)
 
 set_target_properties(mmkv PROPERTIES
         CXX_STANDARD 20
