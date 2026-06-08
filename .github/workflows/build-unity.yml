@@ -1,0 +1,213 @@
+name: Build Unity Native Libraries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ============================================================
+  # iOS - arm64 Static Library
+  # ============================================================
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build iOS arm64
+        run: |
+          cmake -S Unity -B build-ios \
+            -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+            -DMMKV_UNITY_IOS=ON
+          cmake --build build-ios --config Release
+
+      - name: Collect artifact
+        run: |
+          mkdir -p artifact/Plugins/iOS
+          cp build-ios/Release-iphoneos/libmmkv.a artifact/Plugins/iOS/libmmkv.a
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-arm64
+          path: artifact/Plugins/iOS/
+
+  # ============================================================
+  # Android - arm64-v8a / armeabi-v7a / x86_64 Shared Libraries
+  # ============================================================
+  build-android:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup NDK r28
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r28
+
+      - name: Build Android ${{ matrix.abi }}
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          cmake -S Unity -B build-android-${{ matrix.abi }} \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} \
+            -DANDROID_PLATFORM=android-21 \
+            -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-android-${{ matrix.abi }} --config Release
+
+      - name: Collect artifact
+        run: |
+          mkdir -p artifact/Plugins/Android/libs/${{ matrix.abi }}
+          cp build-android-${{ matrix.abi }}/libmmkv.so artifact/Plugins/Android/libs/${{ matrix.abi }}/libmmkv.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.abi }}
+          path: artifact/Plugins/Android/
+
+  # ============================================================
+  # Linux - x86_64 Shared Library
+  # ============================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build Linux x86_64
+        run: |
+          cmake -S Unity -B build-linux \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-linux --config Release
+
+      - name: Collect artifact
+        run: |
+          mkdir -p artifact/Plugins/Linux/x86_64
+          cp build-linux/libmmkv.so artifact/Plugins/Linux/x86_64/libmmkv.so
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: artifact/Plugins/Linux/
+
+  # ============================================================
+  # macOS - arm64 Shared Library
+  # ============================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build macOS arm64
+        run: |
+          cmake -S Unity -B build-macos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-macos --config Release
+
+      - name: Collect artifact
+        run: |
+          mkdir -p artifact/Plugins/macOS/arm64
+          cp build-macos/libmmkv.dylib artifact/Plugins/macOS/arm64/mmkv.dylib
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: artifact/Plugins/macOS/
+
+  # ============================================================
+  # Windows - x86_64 Shared Library
+  # ============================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build Windows x64
+        run: |
+          cmake -S Unity -B build-windows -A x64
+          cmake --build build-windows --config Release
+
+      - name: Collect artifact
+        run: |
+          mkdir -p artifact/Plugins/Windows/x86_64
+          cp build-windows/Release/mmkv.dll artifact/Plugins/Windows/x86_64/mmkv.dll
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: artifact/Plugins/Windows/
+
+  # ============================================================
+  # Release - Assemble Unity Plugin package and create Release
+  # ============================================================
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-ios, build-android, build-linux, build-macos, build-windows]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble Unity Plugin package
+        run: |
+          mkdir -p package/MMKV/Plugins
+
+          # Copy MMKV.cs
+          cp Unity/MMKV.cs package/MMKV/MMKV.cs
+
+          # iOS
+          cp -r artifacts/ios-arm64/* package/MMKV/Plugins/
+
+          # Android (merge all ABIs)
+          mkdir -p package/MMKV/Plugins/Android/libs
+          cp -r artifacts/android-arm64-v8a/libs/arm64-v8a package/MMKV/Plugins/Android/libs/
+          cp -r artifacts/android-armeabi-v7a/libs/armeabi-v7a package/MMKV/Plugins/Android/libs/
+          cp -r artifacts/android-x86_64/libs/x86_64 package/MMKV/Plugins/Android/libs/
+
+          # Linux
+          cp -r artifacts/linux-x86_64/* package/MMKV/Plugins/
+
+          # macOS
+          cp -r artifacts/macos-arm64/* package/MMKV/Plugins/
+
+          # Windows
+          cp -r artifacts/windows-x86_64/* package/MMKV/Plugins/
+
+          # Create zip
+          cd package
+          zip -r ../mmkv-unity-plugin.zip MMKV/
+
+      - name: Verify package structure
+        run: |
+          echo "=== Package contents ==="
+          unzip -l mmkv-unity-plugin.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: mmkv-unity-plugin.zip
