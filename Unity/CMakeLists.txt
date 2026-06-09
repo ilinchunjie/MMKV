@@ -24,7 +24,7 @@ ENDIF()
 # On Linux, force embedded zlib to avoid runtime dependency on libz.so.1
 # (target environments like minimal Docker containers may not have it)
 IF(UNIX AND NOT APPLE AND NOT ANDROID)
-    set(zlib "zlib-NOTFOUND" CACHE FILEPATH "Forced off for Linux Unity" FORCE)
+    set(MMKV_FORCE_EMBED_ZLIB ON CACHE BOOL "Force embedded zlib for Linux Unity" FORCE)
 ENDIF()
 
 add_subdirectory(../Core Core)

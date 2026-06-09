@@ -153,14 +153,17 @@ set_target_properties(core PROPERTIES
         POSITION_INDEPENDENT_CODE ON
         )
 
-find_library(zlib
-        z
-        )
+option(MMKV_FORCE_EMBED_ZLIB "Force use of embedded zlib instead of system zlib" OFF)
 
-IF (NOT zlib)
+IF(MMKV_FORCE_EMBED_ZLIB)
     target_compile_definitions(core PUBLIC MMKV_EMBED_ZLIB=1)
 ELSE()
-    target_link_libraries(core ${zlib})
+    find_library(zlib z)
+    IF (NOT zlib)
+        target_compile_definitions(core PUBLIC MMKV_EMBED_ZLIB=1)
+    ELSE()
+        target_link_libraries(core ${zlib})
+    ENDIF()
 ENDIF()
 
 function(copy_files)
