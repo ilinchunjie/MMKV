@@ -15,6 +15,7 @@ project(mmkv)
 
 # iOS builds as static library, all others as shared
 option(MMKV_UNITY_IOS "Build as iOS static library" OFF)
+option(MMKV_UNITY_STATIC_GNU_RUNTIME "Statically link libstdc++ and libgcc for Linux Unity builds" ON)
 
 IF(APPLE)
     add_compile_definitions(FORCE_POSIX)
@@ -60,6 +61,9 @@ ELSEIF(APPLE)
 ELSE()
     # Linux
     target_link_libraries(mmkv core pthread)
+    IF(MMKV_UNITY_STATIC_GNU_RUNTIME AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_link_options(mmkv PRIVATE -static-libstdc++ -static-libgcc)
+    ENDIF()
 ENDIF()
 
 # Set default symbol visibility to hidden (exports via MMKV_EXPORT)
