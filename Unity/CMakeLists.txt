@@ -21,6 +21,12 @@ IF(APPLE)
     add_compile_definitions(FORCE_POSIX)
 ENDIF()
 
+# On Linux, force embedded zlib to avoid runtime dependency on libz.so.1
+# (target environments like minimal Docker containers may not have it)
+IF(UNIX AND NOT APPLE AND NOT ANDROID)
+    set(zlib "zlib-NOTFOUND" CACHE FILEPATH "Forced off for Linux Unity" FORCE)
+ENDIF()
+
 add_subdirectory(../Core Core)
 
 # Determine library type
